@@ -1,4 +1,3 @@
-# app.py
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -399,7 +398,16 @@ def render_analytics_page(conn):
     with col_b2:
         st.caption("AI model: `gpt-4.1-nano`")
 
+    # ---- FIX: guard against empty data / missing years ----
     data = load_facts(conn, batch_label)
+    if data.empty or "year" not in data.columns:
+        st.warning(
+            "No numeric facts found for this batch yet. "
+            "Please upload a valid Balance Sheet / Trial Balance file for this batch."
+        )
+        st.stop()
+    # -------------------------------------------------------
+
     years = sorted(data["year"].unique().tolist())
     min_y, max_y = min(years), max(years)
 
