@@ -40,7 +40,8 @@ VALID_USERS = {
 def ensure_authenticated() -> None:
     """
     Show a login page until the user is authenticated.
-    Uses st.session_state to persist login across pages/tabs.
+    This is called ONLY on the main Analytics page (mode=analytics),
+    so child pages (chat / journal_create) won't ask for login again.
     """
     if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
@@ -59,10 +60,10 @@ def ensure_authenticated() -> None:
 
     # Not authenticated → show login page and stop execution
     st.title("🔐 Login to Accounting Information App")
-    # st.caption(
-    #     "Demo login with hard-coded credentials. "
-    #     "Example: `admin / admin123` or `analyst / tb2025`."
-    # )
+    st.caption(
+        "Demo login with hard-coded credentials. "
+        "Example: `admin / admin123` or `analyst / tb2025`."
+    )
 
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -220,13 +221,13 @@ def render_journal_create_page(conn):
                 for _, row in existing_batches.iterrows()
             ]
         )
-        st.selectbox(
-            "Use Existing Batch as Template",
-            options=template_options,
-            index=0,
-            help="This demo does not auto-copy values, it's for reference.",
-            key="jb_template",
-        )
+        # st.selectbox(
+        #     "Use Existing Batch as Template",
+        #     options=template_options,
+        #     index=0,
+        #     help="This demo does not auto-copy values, it's for reference.",
+        #     key="jb_template",
+        # )
 
         batch_name = st.text_input("Journal Batch Name *", "", key="jb_name")
         batch_description = st.text_area(
@@ -1009,18 +1010,17 @@ def main():
     conn = get_conn()
     init_db(conn)
 
-    # 🔐 Require login before anything else
-    ensure_authenticated()
-
     params = get_query_params()
     mode = params.get("mode", ["analytics"])[0]
     batch_from_query = params.get("batch_id", [None])[0]
 
+    # 🔐 Login is enforced ONLY for the main analytics view
     if mode == "chat":
         render_chat_page(conn, batch_from_query)
     elif mode == "journal_create":
         render_journal_create_page(conn)
-    else:
+    else:  # analytics or any other fallback
+        ensure_authenticated()
         render_analytics_page(conn)
 
 
