@@ -28,6 +28,65 @@ st.set_page_config(
     page_icon="📊",
 )
 
+# ------------------------------------------------------------
+# Simple hard-coded auth
+# ------------------------------------------------------------
+VALID_USERS = {
+    "admin": "admin123",
+    "analyst": "tb2025",
+}
+
+
+def ensure_authenticated() -> None:
+    """
+    Show a login page until the user is authenticated.
+    Uses st.session_state to persist login across pages/tabs.
+    """
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+        st.session_state["current_user"] = None
+
+    if st.session_state["authenticated"]:
+        # Optional small user badge in the sidebar
+        with st.sidebar:
+            st.markdown("### 🔐 Session")
+            st.write(f"Logged in as: **{st.session_state['current_user']}**")
+            if st.button("Logout"):
+                st.session_state["authenticated"] = False
+                st.session_state["current_user"] = None
+                st.rerun()
+        return
+
+    # Not authenticated → show login page and stop execution
+    st.title("🔐 Login to Accounting Information App")
+    # st.caption(
+    #     "Demo login with hard-coded credentials. "
+    #     "Example: `admin / admin123` or `analyst / tb2025`."
+    # )
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        username = st.text_input("Username", key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        login_clicked = st.button("Login")
+
+        if login_clicked:
+            if username in VALID_USERS and VALID_USERS[username] == password:
+                st.session_state["authenticated"] = True
+                st.session_state["current_user"] = username
+                st.success("✅ Login successful. Redirecting...")
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password. Please try again.")
+
+    # with col2:
+    #     st.markdown("#### Test Credentials")
+    #     st.code("Username: admin\nPassword: admin123", language="text")
+    #     st.code("Username: analyst\nPassword: tb2025", language="text")
+
+    # Stop rest of the app from running until authenticated
+    st.stop()
+
 
 def get_query_params():
     """
@@ -398,7 +457,7 @@ def render_analytics_page(conn):
     with col_b2:
         st.caption("AI model: `gpt-4.1-nano`")
 
-    # ---- FIX: guard against empty data / missing years ----
+    # ---- Guard against empty data / missing years ----
     data = load_facts(conn, batch_label)
     if data.empty or "year" not in data.columns:
         st.warning(
@@ -949,6 +1008,9 @@ def render_analytics_page(conn):
 def main():
     conn = get_conn()
     init_db(conn)
+
+    # 🔐 Require login before anything else
+    ensure_authenticated()
 
     params = get_query_params()
     mode = params.get("mode", ["analytics"])[0]
