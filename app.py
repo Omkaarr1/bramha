@@ -59,7 +59,7 @@ def ensure_authenticated() -> None:
         return
 
     # Not authenticated → show login page and stop execution
-    # st.title("🔐 Login to Accounting Information App")
+    st.title("🔐 Login to Accounting Information App")
     # st.caption(
     #     "Demo login with hard-coded credentials. "
     #     "Example: `admin / admin123` or `analyst / tb2025`."
